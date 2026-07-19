@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08090c">
+  <meta name="description" content="手、ネイル、触れた痕跡をめぐるインタラクティブ作品空間。">
+  <title>TRACE / SKIN — 触れる作品空間</title>
+  <style>
+    :root {
+      --ink: #08090c;
+      --paper: #f2f1ed;
+      --mist: rgba(220, 234, 241, .62);
+      --blue: #a9d7e7;
+      --gold: #b29c67;
+      --rose: #c99aaa;
+      --violet: #9186b6;
+      --progress: 0;
+      --pointer-x: 50%;
+      --pointer-y: 50%;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--ink); scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--paper);
+      background: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, a { color: inherit; font: inherit; }
+    button { border: 0; }
+    :focus-visible { outline: 1px solid var(--blue); outline-offset: 5px; }
+    ::selection { color: #111; background: var(--blue); }
+
+    .experience {
+      position: fixed;
+      inset: 0;
+      height: 100svh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(165, 211, 228, .07), transparent 25%),
+        radial-gradient(circle at 50% 42%, #161923 0, #08090c 58%, #040506 100%);
+    }
+    .experience::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .18;
+      mix-blend-mode: soft-light;
+      background-image:
+        repeating-radial-gradient(circle at 17% 23%, rgba(255,255,255,.12) 0 1px, transparent 1px 5px),
+        repeating-radial-gradient(circle at 71% 67%, rgba(146,176,193,.08) 0 1px, transparent 1px 7px);
+      background-size: 83px 79px, 101px 97px;
+    }
+
+    .film, .film video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .film { overflow: hidden; background: #08090c; }
+    .film video {
+      object-fit: cover;
+      opacity: 0;
+      filter: saturate(.64) contrast(1.12) brightness(.62);
+      transform: scale(1.08);
+      transition: opacity 1.2s ease, filter 1.2s ease, transform 1.5s cubic-bezier(.2,.7,.2,1);
+    }
+    .film video.is-visible { opacity: .66; transform: scale(1.02); }
+    .film .film-etch { filter: saturate(.35) contrast(1.3) brightness(.52); }
+    .film::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(6,7,9,.24), rgba(6,7,9,.05) 42%, rgba(6,7,9,.62));
+    }
+
+    #trace-canvas, #model-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    #trace-canvas { z-index: 3; }
+    #model-canvas { z-index: 4; opacity: 0; pointer-events: none; transition: opacity .8s ease; }
+    #model-canvas.is-visible { opacity: 1; pointer-events: auto; }
+    body.model-open { overflow: hidden; }
+    body.model-open .experience { z-index: 35; opacity: 1 !important; }
+    body.model-open .film,
+    body.model-open .membrane,
+    body.model-open #trace-canvas,
+    body.model-open .caption,
+    body.model-open .gesture-note,
+    body.model-open .chapter-indicator { opacity: 0; }
+    body.model-open .model-switch {
+      position: fixed;
+      z-index: 42;
+      left: 50%;
+      bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+      transform: translateX(-50%);
+      margin: 0;
+      background: rgba(8,9,12,.72);
+      backdrop-filter: blur(14px);
+      white-space: nowrap;
+    }
+
+    .membrane {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      top: 46%;
+      width: min(83vw, 620px);
+      aspect-ratio: 1;
+      border-radius: 48% 52% 59% 41% / 43% 46% 54% 57%;
+      border: 1px solid rgba(215, 232, 239, .16);
+      background:
+        radial-gradient(circle at 37% 28%, rgba(255,255,255,.15), transparent 7%),
+        radial-gradient(circle at 50% 50%, rgba(177,213,226,.06), rgba(144,121,178,.035) 48%, transparent 68%);
+      box-shadow: inset 0 0 40px rgba(197,221,230,.07), 0 0 70px rgba(104,143,166,.06);
+      transform: translate(-50%, -50%) rotate(calc(var(--progress) * 22deg)) scale(calc(.78 + var(--progress) * .22));
+      animation: membrane 11s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    .orbit {
+      position: absolute;
+      inset: 9%;
+      border: 1px solid rgba(184, 169, 124, .15);
+      border-radius: 50%;
+      transform: rotate(-24deg);
+    }
+    .orbit:nth-child(2) { inset: 19%; border-color: rgba(169, 216, 231, .14); transform: rotate(52deg); }
+    .orbit:nth-child(3) { inset: 31%; border-color: rgba(202, 156, 174, .15); transform: rotate(8deg); }
+    .orbit::before {
+      content: "";
+      position: absolute;
+      left: 13%;
+      top: 7%;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(236, 226, 191, .8);
+      box-shadow: 0 0 15px rgba(236, 226, 191, .7);
+    }
+    @keyframes membrane {
+      to { border-radius: 58% 42% 44% 56% / 51% 57% 43% 49%; transform: translate(-50%, -50%) rotate(calc(var(--progress) * 22deg + 5deg)) scale(calc(.8 + var(--progress) * .22)); }
+    }
+
+    .topline {
+      position: absolute;
+      z-index: 8;
+      top: max(18px, env(safe-area-inset-top));
+      left: 19px;
+      right: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .mark { font: 500 9px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .25em; opacity: .58; }
+    .menu-button {
+      position: relative;
+      pointer-events: auto;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      color: rgba(242,241,237,.78);
+      background: rgba(10,11,15,.18);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.12);
+      display: grid;
+      place-items: center;
+    }
+    .menu-button::before, .menu-button::after { content: ""; width: 13px; height: 1px; background: currentColor; position: absolute; }
+    .menu-button::before { left: 50%; top: 50%; transform: translate(-50%, -3px); }
+    .menu-button::after { left: 50%; top: 50%; transform: translate(-50%, 3px); }
+
+    .chapter-indicator {
+      position: absolute;
+      z-index: 8;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: grid;
+      gap: 10px;
+    }
+    .chapter-indicator i { display: block; width: 2px; height: 14px; border-radius: 4px; background: rgba(255,255,255,.18); transition: .5s ease; }
+    .chapter-indicator i.active { height: 28px; background: rgba(197,224,233,.78); box-shadow: 0 0 12px rgba(169,215,231,.45); }
+
+    .caption {
+      position: absolute;
+      z-index: 6;
+      left: max(22px, env(safe-area-inset-left));
+      right: 44px;
+      bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+      max-width: 34rem;
+      pointer-events: none;
+    }
+    .caption .number { display: block; margin-bottom: 11px; font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .22em; color: rgba(190,220,231,.72); }
+    .caption h2 { margin: 0; font-family: "Times New Roman", "Yu Mincho", serif; font-size: clamp(25px, 8vw, 52px); line-height: 1.02; font-weight: 400; letter-spacing: .04em; text-wrap: balance; }
+    .caption p { margin: 12px 0 0; max-width: 28em; font-size: 11px; line-height: 1.85; letter-spacing: .12em; color: rgba(242,241,237,.62); }
+    .caption > * { opacity: 0; transform: translateY(10px); transition: opacity .65s ease, transform .65s ease; }
+    .caption.is-ready > * { opacity: 1; transform: none; }
+    .caption.is-ready p { transition-delay: .08s; }
+
+    .gesture-note {
+      position: absolute;
+      z-index: 6;
+      left: 50%;
+      top: 17%;
+      transform: translateX(-50%);
+      font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .25em;
+      color: rgba(242,241,237,.38);
+      white-space: nowrap;
+      transition: opacity .6s ease;
+      pointer-events: none;
+    }
+
+    .opening {
+      position: fixed;
+      z-index: 20;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #08090c;
+      transition: opacity 1.2s ease, visibility 1.2s;
+    }
+    .opening.is-gone { opacity: 0; visibility: hidden; }
+    .opening::before {
+      content: "";
+      position: absolute;
+      width: min(72vw, 440px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid rgba(184,204,214,.13);
+      box-shadow: inset 0 0 80px rgba(151,192,211,.05), 0 0 90px rgba(145,123,178,.05);
+      animation: breathe 5s ease-in-out infinite alternate;
+    }
+    @keyframes breathe { to { transform: scale(1.07); opacity: .7; } }
+    .opening-inner { position: relative; width: min(76vw, 440px); text-align: center; }
+    .opening-kicker { margin: 0 0 24px; font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .36em; color: rgba(208,226,233,.58); }
+    .opening h1 { margin: 0; font-family: "Times New Roman", "Yu Mincho", serif; font-weight: 400; font-size: clamp(38px, 13vw, 82px); line-height: .86; letter-spacing: .09em; }
+    .opening h1 span { display: block; margin-top: 12px; color: transparent; -webkit-text-stroke: .5px rgba(242,241,237,.55); }
+    .enter {
+      position: relative;
+      margin-top: 60px;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.015);
+      border: 1px solid rgba(224,233,235,.2);
+      color: rgba(242,241,237,.65);
+      font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .2em;
+      transition: background .4s ease, box-shadow .4s ease, transform .4s ease;
+    }
+    .enter:active { transform: scale(.94); background: rgba(169,215,231,.09); box-shadow: 0 0 40px rgba(169,215,231,.13); }
+
+    .overlay {
+      position: fixed;
+      z-index: 30;
+      inset: 0;
+      padding: max(26px, env(safe-area-inset-top)) 24px max(30px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(8,9,12,.92);
+      backdrop-filter: blur(22px);
+      opacity: 0;
+      visibility: hidden;
+      transition: .45s ease;
+    }
+    .overlay.is-open { opacity: 1; visibility: visible; }
+    .overlay-close { position: relative; align-self: flex-end; width: 44px; height: 44px; border-radius: 50%; background: transparent; border: 1px solid rgba(255,255,255,.14); }
+    .overlay-close::before, .overlay-close::after { content: ""; position: absolute; width: 13px; height: 1px; background: rgba(255,255,255,.7); transform: translate(-50%, -50%) rotate(45deg); }
+    .overlay-close::after { transform: translate(-50%, -50%) rotate(-45deg); }
+    .overlay nav { display: grid; gap: 22px; }
+    .overlay nav a { text-decoration: none; font: 400 clamp(27px, 9vw, 56px)/1 "Times New Roman", "Yu Mincho", serif; letter-spacing: .04em; }
+    .overlay small { font-size: 9px; line-height: 1.7; letter-spacing: .15em; color: rgba(255,255,255,.42); }
+
+    .scroll-space { position: relative; z-index: 1; height: 620svh; pointer-events: none; }
+    .chapter { height: 100svh; scroll-snap-align: start; }
+    .chapter-content { width: 1px; height: 1px; overflow: hidden; }
+    .detail-zone { pointer-events: auto; min-height: 155svh; padding: 18svh 22px 16vh; background: linear-gradient(180deg, transparent, rgba(8,9,12,.84) 8%, #0a0b0f 22%); }
+    .detail-inner { width: min(100%, 760px); margin: 0 auto; }
+    .detail-label { font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .27em; color: rgba(174,213,227,.6); }
+    .detail-title { margin: 26px 0 64px; font: 400 clamp(38px, 12vw, 78px)/.98 "Times New Roman", "Yu Mincho", serif; letter-spacing: .03em; }
+    .detail-copy { display: grid; gap: 45px; }
+    .detail-copy article { max-width: 37rem; }
+    .detail-copy article:nth-child(even) { margin-left: auto; }
+    .detail-copy h3 { margin: 0 0 14px; font: 400 20px/1.25 "Times New Roman", "Yu Mincho", serif; letter-spacing: .06em; }
+    .detail-copy p { margin: 0; font-size: 13px; line-height: 2.05; letter-spacing: .06em; color: rgba(242,241,237,.66); }
+
+    .model-switch {
+      margin: 72px auto 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: fit-content;
+      padding: 12px 17px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.025);
+      color: rgba(255,255,255,.7);
+      font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .16em;
+    }
+    .model-switch i { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 12px var(--blue); }
+
+    .archive { margin-top: 140px; }
+    .archive-head { display: flex; justify-content: space-between; align-items: end; margin-bottom: 24px; }
+    .archive-head h3 { margin: 0; font: 400 25px/1 "Times New Roman", "Yu Mincho", serif; }
+    .archive-head span { font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .18em; opacity: .4; }
+    .archive-strip { display: grid; grid-auto-flow: column; grid-auto-columns: 74%; gap: 11px; overflow-x: auto; padding: 0 22px 20px; margin: 0 -22px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .archive-strip::-webkit-scrollbar { display: none; }
+    .work { position: relative; min-height: 44svh; margin: 0; border-radius: 2px; overflow: hidden; background: #101216; scroll-snap-align: center; }
+    .work img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.55) contrast(1.08) brightness(.76); transition: transform .8s ease, filter .8s ease; }
+    .work:active img { transform: scale(1.025); filter: saturate(.8) contrast(1.05) brightness(.9); }
+    .work figcaption { position: absolute; inset: auto 14px 14px; display: flex; justify-content: space-between; gap: 14px; align-items: end; font-size: 10px; letter-spacing: .1em; }
+    .work figcaption span:last-child { font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; opacity: .55; }
+    .tryon-portal {
+      position: relative;
+      display: grid;
+      min-height: 78svh;
+      margin: 110px -22px 0;
+      overflow: hidden;
+      color: var(--paper);
+      text-decoration: none;
+      background: #090b0e;
+      border-top: 1px solid rgba(255,255,255,.1);
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .tryon-portal img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 63% 50%; filter: saturate(.38) brightness(.4) contrast(1.18); transform: scale(1.04); transition: transform 1.2s cubic-bezier(.2,.7,.2,1), filter 1.2s ease; }
+    .tryon-portal::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,7,9,.18), rgba(6,7,9,.35) 52%, rgba(6,7,9,.9)), radial-gradient(circle at 50% 45%, transparent, #08090c 76%); }
+    .tryon-portal:active img { transform: scale(1.08); filter: saturate(.58) brightness(.5) contrast(1.12); }
+    .portal-copy { position: relative; z-index: 2; align-self: end; padding: 26px 22px max(30px, env(safe-area-inset-bottom)); }
+    .portal-copy small { display: block; margin-bottom: 13px; font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .24em; color: rgba(185,219,230,.68); }
+    .portal-copy h3 { margin: 0; font: 400 clamp(33px, 11vw, 66px)/.94 "Times New Roman", "Yu Mincho", serif; letter-spacing: .03em; }
+    .portal-copy p { margin: 15px 0 0; max-width: 26em; font-size: 11px; line-height: 1.8; letter-spacing: .08em; color: rgba(242,241,237,.62); }
+    .portal-enter { position: absolute; z-index: 3; right: 22px; top: 24px; width: 84px; height: 84px; border: 1px solid rgba(215,233,239,.27); border-radius: 50%; display: grid; place-items: center; font: 500 8px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; text-align: center; background: rgba(8,9,12,.3); backdrop-filter: blur(10px); }
+    .footer { margin-top: 110px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,.1); display: flex; justify-content: space-between; font: 500 8px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; opacity: .45; }
+
+    @media (min-width: 760px) {
+      .caption { left: 6vw; bottom: 5vw; }
+      .gesture-note { top: 10%; }
+      .detail-zone { padding-inline: 7vw; }
+      .detail-copy { grid-template-columns: 1fr 1fr; column-gap: 10vw; }
+      .detail-copy article:nth-child(even) { margin-top: 100px; }
+      .archive-strip { grid-auto-columns: 36%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .15s !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="opening" id="opening" role="dialog" aria-label="作品体験を始める">
+    <div class="opening-inner">
+      <p class="opening-kicker">AN INTERACTIVE FIELD OF TOUCH</p>
+      <h1>TRACE<span>SKIN</span></h1>
+      <button class="enter" id="enter" type="button">触れる</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="experience" id="experience" aria-live="polite">
+      <div class="film" aria-hidden="true">
+        <video class="is-visible" data-film="0" src="assets/contemplative-hand.mp4" muted loop playsinline preload="metadata"></video>
+        <video data-film="1" src="assets/mandala-hand.mp4" muted loop playsinline preload="metadata"></video>
+        <video class="film-etch" data-film="2" src="assets/orbiting-hand.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+
+      <div class="membrane" aria-hidden="true"><i class="orbit"></i><i class="orbit"></i><i class="orbit"></i></div>
+      <canvas id="trace-canvas" aria-label="指で触れると光の痕跡が残る画面"></canvas>
+      <canvas id="model-canvas" aria-label="ドラッグして回転できる手の3D作品"></canvas>
+
+      <div class="topline">
+        <span class="mark">TRACE / SKIN — 2026</span>
+        <button class="menu-button" id="menu-open" type="button" aria-label="メニューを開く"></button>
+      </div>
+      <div class="chapter-indicator" aria-hidden="true"><i class="active"></i><i></i><i></i><i></i><i></i></div>
+      <p class="gesture-note" id="gesture-note">画面に触れて、ゆっくり動かす</p>
+      <div class="caption is-ready" id="caption">
+        <span class="number">01 — SURFACE</span>
+        <h2>皮膚の手前で、<br>光がほどける。</h2>
+        <p>指でなぞる。長く触れる。痕跡は留まらず、次の形へ移っていく。</p>
+      </div>
+    </section>
+
+    <div class="overlay" id="menu" aria-hidden="true">
+      <button class="overlay-close" id="menu-close" type="button" aria-label="メニューを閉じる"></button>
+      <nav aria-label="章へ移動">
+        <a href="#surface">Surface</a>
+        <a href="#membrane">Membrane</a>
+        <a href="#inside">Inside</a>
+        <a href="#trace">Trace</a>
+        <a href="#details">Works / Notes</a>
+        <a href="nail/index.html">Nail Material Test</a>
+      </nav>
+      <small>触覚的視覚性 — 見ることを、触れることへ近づける試み</small>
+    </div>
+
+    <div class="scroll-space" id="scroll-space">
+      <section class="chapter" id="surface"><span class="chapter-content">表面</span></section>
+      <section class="chapter" id="membrane"><span class="chapter-content">膜</span></section>
+      <section class="chapter" id="inside"><span class="chapter-content">内部</span></section>
+      <section class="chapter" id="trace"><span class="chapter-content">痕跡</span></section>
+      <section class="chapter"><span class="chapter-content">接続</span></section>
+
+      <section class="detail-zone" id="details">
+        <div class="detail-inner">
+          <span class="detail-label">WORKS / RESEARCH NOTES</span>
+          <h2 class="detail-title">触れたあとに、<br>何が残るか。</h2>
+          <div class="detail-copy">
+            <article>
+              <h3>思惟する手</h3>
+              <p>手は、見る対象であると同時に、世界へ触れるための器官でもある。回転する手の像を固定せず、見る側の指の動きと重ねることで、鑑賞と接触の境界を揺らす。</p>
+            </article>
+            <article>
+              <h3>反復する配置</h3>
+              <p>中心と周縁、像と残像、接近と離脱。曼荼羅的な反復構造を、特定の意味を押しつける記号ではなく、身体が空間を読み取るためのリズムとして扱う。</p>
+            </article>
+            <article>
+              <h3>触感的視覚性</h3>
+              <p>なめらかな映像だけでは消えてしまう、手描き線、粒子、不均質な光。目で追う行為が皮膚感覚を呼び起こすとき、デジタル像は単なる記録から体験へ移る。</p>
+            </article>
+          </div>
+
+          <button class="model-switch" id="model-switch" type="button"><i></i><span>3Dの手に触れる</span></button>
+
+          <div class="archive" aria-label="作品アーカイブ">
+            <div class="archive-head"><h3>Fragments</h3><span>SWIPE →</span></div>
+            <div class="archive-strip">
+              <figure class="work"><img src="assets/hand-orb-01.png" alt="白い球と淡い色の手のレンダリング" loading="lazy"><figcaption><span>Hand / Orb I</span><span>01</span></figcaption></figure>
+              <figure class="work"><img src="assets/hand-orb-02.png" alt="赤いネイルの手と球のレンダリング" loading="lazy"><figcaption><span>Hand / Orb II</span><span>02</span></figcaption></figure>
+              <figure class="work"><img src="assets/hand-trace.png" alt="透明背景に浮かぶ小さな指のジェスチャー" loading="lazy"><figcaption><span>Gesture / Trace</span><span>03</span></figcaption></figure>
+            </div>
+          </div>
+
+          <a class="tryon-portal" href="nail/index.html" aria-label="ネイル素材をカメラの手に重ねる">
+            <img src="assets/hand-orb-02.png" alt="赤いネイルの手と球のレンダリング">
+            <span class="portal-enter">CAMERA<br>START</span>
+            <div class="portal-copy"><small>CONNECTED EXPERIENCE</small><h3>NAIL<br>MATERIAL TEST</h3><p>カメラの手に素材を重ね、指の上で見え方を確認する。</p></div>
+          </a>
+
+          <footer class="footer"><span>EMIKO IMAFUKU</span><span>HAND / NAIL / TRACE</span></footer>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const opening = document.getElementById('opening');
+      const enter = document.getElementById('enter');
+      const experience = document.getElementById('experience');
+      const canvas = document.getElementById('trace-canvas');
+      const ctx = canvas.getContext('2d', { alpha: true });
+      const films = [...document.querySelectorAll('[data-film]')];
+      const caption = document.getElementById('caption');
+      const dots = [...document.querySelectorAll('.chapter-indicator i')];
+      const gestureNote = document.getElementById('gesture-note');
+      const menu = document.getElementById('menu');
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let width = 0, height = 0, dpr = 1, currentChapter = 0, ticking = false, entered = false;
+      let particles = [], trails = [], pressTimer = null, pointerDown = false;
+
+      const chapters = [
+        ['01 — SURFACE', '皮膚の手前で、<br>光がほどける。', '指でなぞる。長く触れる。痕跡は留まらず、次の形へ移っていく。'],
+        ['02 — MEMBRANE', '像と身体のあいだに、<br>薄い膜がある。', 'スクロールするたび表面が透け、奥にある反復と粒子が少しずつ現れる。'],
+        ['03 — INSIDE', '内側は、空洞ではなく<br>小さな運動で満ちている。', 'タップした位置から粒子がほどける。強い意味を決めず、見る人の感覚へ預ける。'],
+        ['04 — TRACE', '指が離れたあとも、<br>動きだけが残る。', '短い残像は、接触の記録。画面を長押しすると光の密度がゆっくり変わる。'],
+        ['05 — PASSAGE', 'ひとつの手から、<br>別の手へ。', '作品像は一覧へ切り替わらず、同じ空間の中で静かに次の像へ接続する。']
+      ];
+
+      function resize() {
+        dpr = Math.min(devicePixelRatio || 1, 1.5);
+        width = innerWidth; height = innerHeight;
+        canvas.width = width * dpr; canvas.height = height * dpr;
+        canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function addTrace(x, y, dense = false) {
+        trails.push({ x, y, life: 1, radius: dense ? 24 : 10 });
+        const count = reduced ? 2 : dense ? 20 : 6;
+        const max = width < 600 ? 80 : 130;
+        for (let i = 0; i < count && particles.length < max; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const speed = .12 + Math.random() * (dense ? 1.1 : .55);
+          particles.push({
+            x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - .08,
+            life: 1, size: .5 + Math.random() * (dense ? 2.3 : 1.4),
+            tone: Math.random()
+          });
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'lighter';
+        trails = trails.filter(t => t.life > .015);
+        for (const t of trails) {
+          const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.radius * (1.7 - t.life));
+          g.addColorStop(0, `rgba(208,235,242,${t.life * .14})`);
+          g.addColorStop(.5, `rgba(196,158,185,${t.life * .055})`);
+          g.addColorStop(1, 'rgba(160,190,220,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(t.x, t.y, t.radius * (1.7 - t.life), 0, Math.PI * 2); ctx.fill();
+          t.life *= .965;
+        }
+        particles = particles.filter(p => p.life > .02);
+        for (const p of particles) {
+          p.x += p.vx; p.y += p.vy; p.vx *= .993; p.vy *= .993; p.life *= .982;
+          const color = p.tone > .83 ? '220,196,139' : p.tone > .48 ? '172,217,232' : '207,171,192';
+          ctx.fillStyle = `rgba(${color},${p.life * .55})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+
+      function pointerPosition(e) {
+        const p = e.touches ? e.touches[0] : e;
+        return { x: p.clientX, y: p.clientY };
+      }
+      function onDown(e) {
+        pointerDown = true;
+        const { x, y } = pointerPosition(e); addTrace(x, y, true);
+        pressTimer = setTimeout(() => addTrace(x, y, true), 520);
+      }
+      function onMove(e) {
+        const { x, y } = pointerPosition(e);
+        document.documentElement.style.setProperty('--pointer-x', `${x}px`);
+        document.documentElement.style.setProperty('--pointer-y', `${y}px`);
+        if (pointerDown) addTrace(x, y);
+      }
+      function onUp() { pointerDown = false; clearTimeout(pressTimer); }
+
+      function setChapter(index) {
+        if (index === currentChapter && caption.classList.contains('is-ready')) return;
+        currentChapter = index;
+        caption.classList.remove('is-ready');
+        setTimeout(() => {
+          const [n, h, p] = chapters[index];
+          caption.querySelector('.number').textContent = n;
+          caption.querySelector('h2').innerHTML = h;
+          caption.querySelector('p').textContent = p;
+          caption.classList.add('is-ready');
+        }, 230);
+        dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+        const filmIndex = index < 2 ? 0 : index < 4 ? 1 : 2;
+        films.forEach((film, i) => film.classList.toggle('is-visible', i === filmIndex));
+        gestureNote.style.opacity = index === 0 ? '.9' : '0';
+      }
+
+      function updateScroll() {
+        const total = innerHeight * 4;
+        const p = Math.max(0, Math.min(1, scrollY / total));
+        document.documentElement.style.setProperty('--progress', p.toFixed(3));
+        setChapter(Math.min(4, Math.max(0, Math.floor((scrollY + innerHeight * .34) / innerHeight))));
+        experience.style.opacity = scrollY > innerHeight * 4.9 ? String(Math.max(0, 1 - (scrollY - innerHeight * 4.9) / (innerHeight * .7))) : '1';
+        ticking = false;
+      }
+
+      enter.addEventListener('click', () => {
+        opening.classList.add('is-gone'); entered = true;
+        films.forEach(v => v.play().catch(() => {}));
+        addTrace(width / 2, height / 2, true);
+      });
+      addEventListener('resize', resize, { passive: true });
+      addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(updateScroll); } }, { passive: true });
+      canvas.addEventListener('pointerdown', onDown);
+      canvas.addEventListener('pointermove', onMove);
+      canvas.addEventListener('pointerup', onUp);
+      canvas.addEventListener('pointercancel', onUp);
+      document.getElementById('menu-open').addEventListener('click', () => { menu.classList.add('is-open'); menu.setAttribute('aria-hidden', 'false'); });
+      document.getElementById('menu-close').addEventListener('click', () => { menu.classList.remove('is-open'); menu.setAttribute('aria-hidden', 'true'); });
+      menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { menu.classList.remove('is-open'); menu.setAttribute('aria-hidden', 'true'); }));
+      addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('menu-close').click(); });
+      resize(); updateScroll(); draw();
+    })();
+  </script>
+
+  <script type="module">
+    const button = document.getElementById('model-switch');
+    const canvas = document.getElementById('model-canvas');
+    let active = false, loaded = false, cleanup = null;
+
+    button.addEventListener('click', async () => {
+      active = !active;
+      canvas.classList.toggle('is-visible', active);
+      document.body.classList.toggle('model-open', active);
+      button.classList.toggle('is-model-active', active);
+      button.querySelector('span').textContent = active ? '映像の手に戻る' : '3Dの手に触れる';
+      if (!active || loaded) return;
+      button.querySelector('span').textContent = '3Dを読み込み中…';
+      try {
+        const THREE = await import('https://esm.sh/three@0.169.0');
+        const { GLTFLoader } = await import('https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+        renderer.setSize(innerWidth, innerHeight, false);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, .01, 100);
+        camera.position.set(0, 0, 4.2);
+        scene.add(new THREE.HemisphereLight(0xcbe5ef, 0x2a2033, 2.2));
+        const key = new THREE.DirectionalLight(0xe9dcb7, 2.8); key.position.set(2, 3, 4); scene.add(key);
+        const rim = new THREE.PointLight(0x9c78c0, 5, 8); rim.position.set(-2, 0, 2); scene.add(rim);
+        const gltf = await new GLTFLoader().loadAsync('assets/contemplative-hand.glb');
+        const model = gltf.scene;
+        const box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+        model.scale.setScalar(2.45 / Math.max(size.x, size.y, size.z));
+        scene.add(model);
+        let rx = -.08, ry = .2, down = false, lx = 0, ly = 0;
+        canvas.addEventListener('pointerdown', e => { down = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
+        canvas.addEventListener('pointermove', e => { if (!down) return; ry += (e.clientX - lx) * .008; rx += (e.clientY - ly) * .008; lx = e.clientX; ly = e.clientY; });
+        canvas.addEventListener('pointerup', () => down = false);
+        const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+        addEventListener('resize', resize, { passive: true });
+        function render() { model.rotation.x += (rx - model.rotation.x) * .08; model.rotation.y += (ry - model.rotation.y) * .08; if (!down) ry += .0013; renderer.render(scene, camera); requestAnimationFrame(render); }
+        render(); loaded = true; button.querySelector('span').textContent = '映像の手に戻る';
+      } catch (error) {
+        active = false; canvas.classList.remove('is-visible'); document.body.classList.remove('model-open');
+        button.querySelector('span').textContent = '3Dは「このサイトを開く.command」から表示';
+      }
+    });
+  </script>
+</body>
+</html>
