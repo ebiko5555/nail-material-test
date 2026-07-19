@@ -92,6 +92,26 @@
     #trace-canvas { z-index: 3; }
     #model-canvas { z-index: 4; opacity: 0; pointer-events: none; transition: opacity .8s ease; }
     #model-canvas.is-visible { opacity: 1; pointer-events: auto; }
+    .model-controls { position: absolute; z-index: 12; inset: 0; display: none; pointer-events: none; }
+    body.model-open .model-controls { display: block; }
+    .model-back {
+      position: absolute; top: max(18px, env(safe-area-inset-top)); left: 18px; min-height: 44px; padding: 0 17px;
+      border: 1px solid rgba(255,255,255,.2); border-radius: 999px; color: rgba(255,255,255,.88);
+      background: rgba(8,9,12,.72); backdrop-filter: blur(16px);
+      font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; pointer-events: auto;
+    }
+    .model-help {
+      position: absolute; top: max(80px, calc(env(safe-area-inset-top) + 62px)); left: 20px; margin: 0;
+      color: rgba(255,255,255,.48); font: 500 8px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .15em;
+    }
+    .model-zoom {
+      position: absolute; right: 18px; bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+      display: grid; grid-template-columns: 46px 46px; gap: 7px; pointer-events: auto;
+    }
+    .model-zoom button {
+      width: 46px; height: 46px; border: 1px solid rgba(255,255,255,.2); border-radius: 50%;
+      color: rgba(255,255,255,.88); background: rgba(8,9,12,.72); backdrop-filter: blur(16px); font-size: 19px; font-weight: 200;
+    }
     body.model-open { overflow: hidden; }
     body.model-open .experience { z-index: 35; opacity: 1 !important; }
     body.model-open .film,
@@ -100,17 +120,7 @@
     body.model-open .caption,
     body.model-open .gesture-note,
     body.model-open .chapter-indicator { opacity: 0; }
-    body.model-open .model-switch {
-      position: fixed;
-      z-index: 42;
-      left: 50%;
-      bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
-      transform: translateX(-50%);
-      margin: 0;
-      background: rgba(8,9,12,.72);
-      backdrop-filter: blur(14px);
-      white-space: nowrap;
-    }
+    body.model-open .model-switch { visibility: hidden; }
 
     .membrane {
       position: absolute;
@@ -382,6 +392,14 @@
       <div class="membrane" aria-hidden="true"><i class="orbit"></i><i class="orbit"></i><i class="orbit"></i></div>
       <canvas id="trace-canvas" aria-label="指で触れると光の痕跡が残る画面"></canvas>
       <canvas id="model-canvas" aria-label="ドラッグして回転できる手の3D作品"></canvas>
+      <div class="model-controls" id="model-controls" aria-hidden="true">
+        <button class="model-back" id="model-back" type="button">← 作品へ戻る</button>
+        <p class="model-help">1本指で回転<br>2本指で拡大・縮小</p>
+        <div class="model-zoom" aria-label="3Dの拡大縮小">
+          <button id="model-zoom-out" type="button" aria-label="縮小">−</button>
+          <button id="model-zoom-in" type="button" aria-label="拡大">＋</button>
+        </div>
+      </div>
 
       <div class="topline">
         <span class="mark">TRACE / SKIN — 2026</span>
@@ -593,14 +611,27 @@
   <script type="module">
     const button = document.getElementById('model-switch');
     const canvas = document.getElementById('model-canvas');
-    let active = false, loaded = false, cleanup = null;
+    const controls = document.getElementById('model-controls');
+    const back = document.getElementById('model-back');
+    const zoomIn = document.getElementById('model-zoom-in');
+    const zoomOut = document.getElementById('model-zoom-out');
+    let active = false, loaded = false, camera = null, targetCameraZ = 4.2;
 
-    button.addEventListener('click', async () => {
-      active = !active;
+    function setModelOpen(next) {
+      active = next;
       canvas.classList.toggle('is-visible', active);
       document.body.classList.toggle('model-open', active);
       button.classList.toggle('is-model-active', active);
+      controls.setAttribute('aria-hidden', String(!active));
       button.querySelector('span').textContent = active ? '映像の手に戻る' : '3Dの手に触れる';
+    }
+
+    function changeZoom(delta) {
+      targetCameraZ = Math.max(2.25, Math.min(7.2, targetCameraZ + delta));
+    }
+
+    button.addEventListener('click', async () => {
+      setModelOpen(!active);
       if (!active || loaded) return;
       button.querySelector('span').textContent = '3Dを読み込み中…';
       try {
@@ -611,30 +642,68 @@
         renderer.setSize(innerWidth, innerHeight, false);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, .01, 100);
+        camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, .01, 100);
         camera.position.set(0, 0, 4.2);
         scene.add(new THREE.HemisphereLight(0xcbe5ef, 0x2a2033, 2.2));
         const key = new THREE.DirectionalLight(0xe9dcb7, 2.8); key.position.set(2, 3, 4); scene.add(key);
         const rim = new THREE.PointLight(0x9c78c0, 5, 8); rim.position.set(-2, 0, 2); scene.add(rim);
         const gltf = await new GLTFLoader().loadAsync('assets/contemplative-hand.glb');
         const model = gltf.scene;
-        const box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+        const floor = model.getObjectByName('Plane');
+        const hand = model.getObjectByName('shiyuisyu') || model;
+        if (floor) floor.visible = false;
+        const box = new THREE.Box3().setFromObject(hand), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
         model.position.sub(center);
-        model.scale.setScalar(2.45 / Math.max(size.x, size.y, size.z));
+        model.scale.setScalar(2.15 / Math.max(size.x, size.y, size.z));
         scene.add(model);
-        let rx = -.08, ry = .2, down = false, lx = 0, ly = 0;
-        canvas.addEventListener('pointerdown', e => { down = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
-        canvas.addEventListener('pointermove', e => { if (!down) return; ry += (e.clientX - lx) * .008; rx += (e.clientY - ly) * .008; lx = e.clientX; ly = e.clientY; });
-        canvas.addEventListener('pointerup', () => down = false);
+        let rx = -.08, ry = .2, down = false, lx = 0, ly = 0, pinchDistance = 0;
+        const pointers = new Map();
+        canvas.addEventListener('pointerdown', e => {
+          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (pointers.size === 1) { down = true; lx = e.clientX; ly = e.clientY; }
+          if (pointers.size === 2) {
+            const [a, b] = [...pointers.values()];
+            pinchDistance = Math.hypot(a.x - b.x, a.y - b.y);
+            down = false;
+          }
+          canvas.setPointerCapture(e.pointerId);
+        });
+        canvas.addEventListener('pointermove', e => {
+          if (!pointers.has(e.pointerId)) return;
+          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (pointers.size === 2) {
+            const [a, b] = [...pointers.values()];
+            const distance = Math.hypot(a.x - b.x, a.y - b.y);
+            if (pinchDistance) changeZoom((pinchDistance - distance) * .012);
+            pinchDistance = distance;
+          } else if (down) {
+            ry += (e.clientX - lx) * .008;
+            rx += (e.clientY - ly) * .008;
+            lx = e.clientX; ly = e.clientY;
+          }
+        });
+        const release = e => {
+          pointers.delete(e.pointerId);
+          pinchDistance = 0;
+          down = pointers.size === 1;
+          if (down) { const p = [...pointers.values()][0]; lx = p.x; ly = p.y; }
+        };
+        canvas.addEventListener('pointerup', release);
+        canvas.addEventListener('pointercancel', release);
+        canvas.addEventListener('wheel', e => { e.preventDefault(); changeZoom(e.deltaY * .004); }, { passive: false });
         const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
         addEventListener('resize', resize, { passive: true });
-        function render() { model.rotation.x += (rx - model.rotation.x) * .08; model.rotation.y += (ry - model.rotation.y) * .08; if (!down) ry += .0013; renderer.render(scene, camera); requestAnimationFrame(render); }
+        function render() { model.rotation.x += (rx - model.rotation.x) * .08; model.rotation.y += (ry - model.rotation.y) * .08; camera.position.z += (targetCameraZ - camera.position.z) * .12; if (!down && pointers.size === 0) ry += .0013; renderer.render(scene, camera); requestAnimationFrame(render); }
         render(); loaded = true; button.querySelector('span').textContent = '映像の手に戻る';
       } catch (error) {
-        active = false; canvas.classList.remove('is-visible'); document.body.classList.remove('model-open');
+        setModelOpen(false);
         button.querySelector('span').textContent = '3Dは「このサイトを開く.command」から表示';
       }
     });
+    back.addEventListener('click', () => setModelOpen(false));
+    zoomIn.addEventListener('click', () => changeZoom(-.65));
+    zoomOut.addEventListener('click', () => changeZoom(.65));
+    addEventListener('keydown', e => { if (e.key === 'Escape' && active) setModelOpen(false); });
   </script>
 </body>
 </html>
