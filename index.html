@@ -409,8 +409,8 @@
       <p class="gesture-note" id="gesture-note">画面に触れて、ゆっくり動かす</p>
       <div class="caption is-ready" id="caption">
         <span class="number">01 — SURFACE</span>
-        <h2>皮膚の手前で、<br>光がほどける。</h2>
-        <p>指でなぞる。長く触れる。痕跡は留まらず、次の形へ移っていく。</p>
+        <h2>指でなぞると、<br>光の痕跡が残る。</h2>
+        <p>触れた場所に光が生まれ、少しずつ消えていく。まずは画面に触れてみる。</p>
       </div>
     </section>
 
@@ -422,6 +422,7 @@
         <a href="#inside">Inside</a>
         <a href="#trace">Trace</a>
         <a href="#details">Works / Notes</a>
+        <a href="atelier/index.html">Try-on Ateliers</a>
         <a href="nail/index.html">Nail Material Test</a>
       </nav>
       <small>触覚的視覚性 — 見ることを、触れることへ近づける試み</small>
@@ -440,16 +441,16 @@
           <h2 class="detail-title">触れたあとに、<br>何が残るか。</h2>
           <div class="detail-copy">
             <article>
-              <h3>思惟する手</h3>
-              <p>手は、見る対象であると同時に、世界へ触れるための器官でもある。回転する手の像を固定せず、見る側の指の動きと重ねることで、鑑賞と接触の境界を揺らす。</p>
+              <h3>なぜ手なのか</h3>
+              <p>20年、人の手と爪に触れる仕事をしてきた。手は見られる対象であると同時に、世界に触れるための器官でもある。その二重性を、画面の中でそのまま扱っている。</p>
             </article>
             <article>
-              <h3>反復する配置</h3>
-              <p>中心と周縁、像と残像、接近と離脱。曼荼羅的な反復構造を、特定の意味を押しつける記号ではなく、身体が空間を読み取るためのリズムとして扱う。</p>
+              <h3>なぜ痕跡なのか</h3>
+              <p>施術は跡を残す仕事だが、爪の上に置いた色は伸びて、削られて、いずれ消える。消えることを前提にした光の痕跡は、その時間の写しとして置いている。</p>
             </article>
             <article>
-              <h3>触感的視覚性</h3>
-              <p>なめらかな映像だけでは消えてしまう、手描き線、粒子、不均質な光。目で追う行為が皮膚感覚を呼び起こすとき、デジタル像は単なる記録から体験へ移る。</p>
+              <h3>修士論文との接続</h3>
+              <p>修士論文「爪の再生は自信の再生である」の続きにある制作。見ることを触れることに近づけるため、なめらかな映像だけでは残らない粒子や不均質な光をあえて残している。</p>
             </article>
           </div>
 
@@ -464,10 +465,10 @@
             </div>
           </div>
 
-          <a class="tryon-portal" href="nail/index.html" aria-label="ネイル素材をカメラの手に重ねる">
+          <a class="tryon-portal" href="atelier/index.html" aria-label="ネイル試着アトリエの一覧へ">
             <img src="assets/hand-orb-02.png" alt="赤いネイルの手と球のレンダリング">
-            <span class="portal-enter">CAMERA<br>START</span>
-            <div class="portal-copy"><small>CONNECTED EXPERIENCE</small><h3>NAIL<br>MATERIAL TEST</h3><p>カメラの手に素材を重ね、指の上で見え方を確認する。</p></div>
+            <span class="portal-enter">ATELIER<br>ENTER</span>
+            <div class="portal-copy"><small>NAIL TRY-ON ATELIERS</small><h3>試着の間</h3><p>カメラに手をかざすと、爪の位置にデザインが重なる。対象もコンセプトも違う4つのアトリエを用意した。</p></div>
           </a>
 
           <footer class="footer"><span>EMIKO IMAFUKU</span><span>HAND / NAIL / TRACE</span></footer>
@@ -493,11 +494,11 @@
       let particles = [], trails = [], pressTimer = null, pointerDown = false;
 
       const chapters = [
-        ['01 — SURFACE', '皮膚の手前で、<br>光がほどける。', '指でなぞる。長く触れる。痕跡は留まらず、次の形へ移っていく。'],
-        ['02 — MEMBRANE', '像と身体のあいだに、<br>薄い膜がある。', 'スクロールするたび表面が透け、奥にある反復と粒子が少しずつ現れる。'],
-        ['03 — INSIDE', '内側は、空洞ではなく<br>小さな運動で満ちている。', 'タップした位置から粒子がほどける。強い意味を決めず、見る人の感覚へ預ける。'],
-        ['04 — TRACE', '指が離れたあとも、<br>動きだけが残る。', '短い残像は、接触の記録。画面を長押しすると光の密度がゆっくり変わる。'],
-        ['05 — PASSAGE', 'ひとつの手から、<br>別の手へ。', '作品像は一覧へ切り替わらず、同じ空間の中で静かに次の像へ接続する。']
+        ['01 — SURFACE', '指でなぞると、<br>光の痕跡が残る。', '触れた場所に光が生まれ、少しずつ消えていく。まずは画面に触れてみる。'],
+        ['02 — MEMBRANE', '手は、見る対象であり<br>触れる器官でもある。', 'スクロールすると映像の奥の層が現れる。手のこの二重性が、この作品の出発点。'],
+        ['03 — INSIDE', 'タップした場所から、<br>粒子が散る。', '飾りではなく、触れた事実への応答。反応が返ってくると、見る人は当事者になる。'],
+        ['04 — TRACE', '指が離れても、<br>動きは少しだけ残る。', '残像は接触の記録。画面を長押しすると光の密度が変わる。'],
+        ['05 — PASSAGE', 'ここから先は、<br>試着の空間。', 'この下のセクションから、カメラの手にネイルを重ねる4つのアトリエへ移動できる。']
       ];
 
       function resize() {
