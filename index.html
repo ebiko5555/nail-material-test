@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#08090c">
   <meta name="description" content="手、ネイル、触れた痕跡をめぐるインタラクティブ作品空間。">
   <title>TRACE / SKIN — 触れる作品空間</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
       --ink: #08090c;
@@ -214,11 +217,9 @@
       pointer-events: none;
     }
     .caption .number { display: block; margin-bottom: 11px; font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .22em; color: rgba(190,220,231,.72); }
-    .caption h2 { margin: 0; font-family: "Times New Roman", "Yu Mincho", serif; font-size: clamp(25px, 8vw, 52px); line-height: 1.02; font-weight: 400; letter-spacing: .04em; text-wrap: balance; }
-    .caption p { margin: 12px 0 0; max-width: 28em; font-size: 11px; line-height: 1.85; letter-spacing: .12em; color: rgba(242,241,237,.62); }
+    .caption h2 { margin: 0; font-family: "Cormorant Garamond", "Didot", "Times New Roman", serif; font-style: italic; font-weight: 300; font-size: clamp(44px, 12vw, 96px); line-height: 1; letter-spacing: .05em; }
     .caption > * { opacity: 0; transform: translateY(10px); transition: opacity .65s ease, transform .65s ease; }
     .caption.is-ready > * { opacity: 1; transform: none; }
-    .caption.is-ready p { transition-delay: .08s; }
 
     .gesture-note {
       position: absolute;
@@ -391,26 +392,16 @@
 
       <div class="membrane" aria-hidden="true"><i class="orbit"></i><i class="orbit"></i><i class="orbit"></i></div>
       <canvas id="trace-canvas" aria-label="指で触れると光の痕跡が残る画面"></canvas>
-      <canvas id="model-canvas" aria-label="ドラッグして回転できる手の3D作品"></canvas>
-      <div class="model-controls" id="model-controls" aria-hidden="true">
-        <button class="model-back" id="model-back" type="button">← 作品へ戻る</button>
-        <p class="model-help">1本指で回転<br>2本指で拡大・縮小</p>
-        <div class="model-zoom" aria-label="3Dの拡大縮小">
-          <button id="model-zoom-out" type="button" aria-label="縮小">−</button>
-          <button id="model-zoom-in" type="button" aria-label="拡大">＋</button>
-        </div>
-      </div>
 
       <div class="topline">
         <span class="mark">TRACE / SKIN — 2026</span>
         <button class="menu-button" id="menu-open" type="button" aria-label="メニューを開く"></button>
       </div>
       <div class="chapter-indicator" aria-hidden="true"><i class="active"></i><i></i><i></i><i></i><i></i></div>
-      <p class="gesture-note" id="gesture-note">画面に触れて、ゆっくり動かす</p>
+      <p class="gesture-note" id="gesture-note">TOUCH &amp; DRIFT</p>
       <div class="caption is-ready" id="caption">
-        <span class="number">01 — SURFACE</span>
-        <h2>指でなぞると、<br>光の痕跡が残る。</h2>
-        <p>触れた場所に光が生まれ、少しずつ消えていく。まずは画面に触れてみる。</p>
+        <span class="number">01</span>
+        <h2>Surface</h2>
       </div>
     </section>
 
@@ -454,7 +445,7 @@
             </article>
           </div>
 
-          <button class="model-switch" id="model-switch" type="button"><i></i><span>3Dの手に触れる</span></button>
+          <a class="model-switch" href="https://ebiko5555.github.io/hand-object-play/" style="text-decoration:none"><i></i><span>3Dの手に触れる</span></a>
 
           <div class="archive" aria-label="作品アーカイブ">
             <div class="archive-head"><h3>Fragments</h3><span>SWIPE →</span></div>
@@ -494,11 +485,11 @@
       let particles = [], trails = [], pressTimer = null, pointerDown = false;
 
       const chapters = [
-        ['01 — SURFACE', '指でなぞると、<br>光の痕跡が残る。', '触れた場所に光が生まれ、少しずつ消えていく。まずは画面に触れてみる。'],
-        ['02 — MEMBRANE', '手は、見る対象であり<br>触れる器官でもある。', 'スクロールすると映像の奥の層が現れる。手のこの二重性が、この作品の出発点。'],
-        ['03 — INSIDE', 'タップした場所から、<br>粒子が散る。', '飾りではなく、触れた事実への応答。反応が返ってくると、見る人は当事者になる。'],
-        ['04 — TRACE', '指が離れても、<br>動きは少しだけ残る。', '残像は接触の記録。画面を長押しすると光の密度が変わる。'],
-        ['05 — PASSAGE', 'ここから先は、<br>試着の空間。', 'この下のセクションから、カメラの手にネイルを重ねる4つのアトリエへ移動できる。']
+        ['01', 'Surface'],
+        ['02', 'Membrane'],
+        ['03', 'Inside'],
+        ['04', 'Trace'],
+        ['05', 'Passage']
       ];
 
       function resize() {
@@ -569,10 +560,9 @@
         currentChapter = index;
         caption.classList.remove('is-ready');
         setTimeout(() => {
-          const [n, h, p] = chapters[index];
+          const [n, h] = chapters[index];
           caption.querySelector('.number').textContent = n;
-          caption.querySelector('h2').innerHTML = h;
-          caption.querySelector('p').textContent = p;
+          caption.querySelector('h2').textContent = h;
           caption.classList.add('is-ready');
         }, 230);
         dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
@@ -609,102 +599,5 @@
     })();
   </script>
 
-  <script type="module">
-    const button = document.getElementById('model-switch');
-    const canvas = document.getElementById('model-canvas');
-    const controls = document.getElementById('model-controls');
-    const back = document.getElementById('model-back');
-    const zoomIn = document.getElementById('model-zoom-in');
-    const zoomOut = document.getElementById('model-zoom-out');
-    let active = false, loaded = false, camera = null, targetCameraZ = 4.2;
-
-    function setModelOpen(next) {
-      active = next;
-      canvas.classList.toggle('is-visible', active);
-      document.body.classList.toggle('model-open', active);
-      button.classList.toggle('is-model-active', active);
-      controls.setAttribute('aria-hidden', String(!active));
-      button.querySelector('span').textContent = active ? '映像の手に戻る' : '3Dの手に触れる';
-    }
-
-    function changeZoom(delta) {
-      targetCameraZ = Math.max(2.25, Math.min(7.2, targetCameraZ + delta));
-    }
-
-    button.addEventListener('click', async () => {
-      setModelOpen(!active);
-      if (!active || loaded) return;
-      button.querySelector('span').textContent = '3Dを読み込み中…';
-      try {
-        const THREE = await import('https://esm.sh/three@0.169.0');
-        const { GLTFLoader } = await import('https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js');
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
-        renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-        renderer.setSize(innerWidth, innerHeight, false);
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        const scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, .01, 100);
-        camera.position.set(0, 0, 4.2);
-        scene.add(new THREE.HemisphereLight(0xcbe5ef, 0x2a2033, 2.2));
-        const key = new THREE.DirectionalLight(0xe9dcb7, 2.8); key.position.set(2, 3, 4); scene.add(key);
-        const rim = new THREE.PointLight(0x9c78c0, 5, 8); rim.position.set(-2, 0, 2); scene.add(rim);
-        const gltf = await new GLTFLoader().loadAsync('assets/contemplative-hand.glb');
-        const model = gltf.scene;
-        const floor = model.getObjectByName('Plane');
-        const hand = model.getObjectByName('shiyuisyu') || model;
-        if (floor) floor.visible = false;
-        const box = new THREE.Box3().setFromObject(hand), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
-        model.position.sub(center);
-        model.scale.setScalar(2.15 / Math.max(size.x, size.y, size.z));
-        scene.add(model);
-        let rx = -.08, ry = .2, down = false, lx = 0, ly = 0, pinchDistance = 0;
-        const pointers = new Map();
-        canvas.addEventListener('pointerdown', e => {
-          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-          if (pointers.size === 1) { down = true; lx = e.clientX; ly = e.clientY; }
-          if (pointers.size === 2) {
-            const [a, b] = [...pointers.values()];
-            pinchDistance = Math.hypot(a.x - b.x, a.y - b.y);
-            down = false;
-          }
-          canvas.setPointerCapture(e.pointerId);
-        });
-        canvas.addEventListener('pointermove', e => {
-          if (!pointers.has(e.pointerId)) return;
-          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-          if (pointers.size === 2) {
-            const [a, b] = [...pointers.values()];
-            const distance = Math.hypot(a.x - b.x, a.y - b.y);
-            if (pinchDistance) changeZoom((pinchDistance - distance) * .012);
-            pinchDistance = distance;
-          } else if (down) {
-            ry += (e.clientX - lx) * .008;
-            rx += (e.clientY - ly) * .008;
-            lx = e.clientX; ly = e.clientY;
-          }
-        });
-        const release = e => {
-          pointers.delete(e.pointerId);
-          pinchDistance = 0;
-          down = pointers.size === 1;
-          if (down) { const p = [...pointers.values()][0]; lx = p.x; ly = p.y; }
-        };
-        canvas.addEventListener('pointerup', release);
-        canvas.addEventListener('pointercancel', release);
-        canvas.addEventListener('wheel', e => { e.preventDefault(); changeZoom(e.deltaY * .004); }, { passive: false });
-        const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
-        addEventListener('resize', resize, { passive: true });
-        function render() { model.rotation.x += (rx - model.rotation.x) * .08; model.rotation.y += (ry - model.rotation.y) * .08; camera.position.z += (targetCameraZ - camera.position.z) * .12; if (!down && pointers.size === 0) ry += .0013; renderer.render(scene, camera); requestAnimationFrame(render); }
-        render(); loaded = true; button.querySelector('span').textContent = '映像の手に戻る';
-      } catch (error) {
-        setModelOpen(false);
-        button.querySelector('span').textContent = '3Dは「このサイトを開く.command」から表示';
-      }
-    });
-    back.addEventListener('click', () => setModelOpen(false));
-    zoomIn.addEventListener('click', () => changeZoom(-.65));
-    zoomOut.addEventListener('click', () => changeZoom(.65));
-    addEventListener('keydown', e => { if (e.key === 'Escape' && active) setModelOpen(false); });
-  </script>
 </body>
 </html>
