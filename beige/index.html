@@ -378,6 +378,8 @@
     /* beige version fixes */
     .tryon-portal { color: #f2ede7; background: #090b0e; }
     .portal-copy small { color: rgba(185,219,230,.68); }
+    .tryon-portal img { filter: saturate(.5) brightness(.85) contrast(1.02); }
+    .tryon-portal::after { background: linear-gradient(180deg, rgba(6,7,9,.1), rgba(6,7,9,.25) 52%, rgba(6,7,9,.78)), radial-gradient(circle at 50% 45%, transparent, rgba(8,9,12,.55) 76%); }
     .work { background: #e5ddd0; }
     .opening h1 span { color: transparent; }
     ::selection { color: #f7f2ea; background: #4e7e96; }
@@ -423,7 +425,7 @@
         <a href="#inside">Inside</a>
         <a href="#trace">Trace</a>
         <a href="#details">Works / Notes</a>
-        <a href="../atelier/index.html">Try-on Ateliers</a>
+        <a href="atelier/index.html">Try-on Ateliers</a>
         <a href="../nail/index.html">Nail Material Test</a>
       </nav>
       <small>触覚的視覚性 — 見ることを、触れることへ近づける試み</small>
@@ -452,7 +454,7 @@
             </div>
           </div>
 
-          <a class="tryon-portal" href="../atelier/index.html" aria-label="ネイル試着アトリエの一覧へ">
+          <a class="tryon-portal" href="atelier/index.html" aria-label="ネイル試着アトリエの一覧へ">
             <img src="../assets/hand-orb-02.png" alt="赤いネイルの手と球のレンダリング">
             <span class="portal-enter">ATELIER<br>ENTER</span>
             <div class="portal-copy"><small>NAIL TRY-ON ATELIERS</small><h3 class="portal-en">Fitting</h3></div>

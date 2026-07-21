@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#efe9e0">
+  <meta name="description" content="カメラの手にネイルを重ねる4つの試着アトリエと素材テストの入口。">
+  <title>Fitting — Beige</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #efe9e0;
+      --paper: #2a2521;
+      --blue: #4e7e96;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--ink); }
+    body {
+      margin: 0;
+      color: var(--paper);
+      background:
+        radial-gradient(circle at 50% 12%, #f7f2ea 0, #efe9e0 55%, #e7dfd2 100%);
+      min-height: 100svh;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      font-weight: 300;
+      -webkit-tap-highlight-color: transparent;
+    }
+    a { color: inherit; }
+    :focus-visible { outline: 1px solid var(--blue); outline-offset: 5px; }
+
+    .wrap { width: min(100%, 760px); margin: 0 auto; padding: max(26px, env(safe-area-inset-top)) 22px max(40px, env(safe-area-inset-bottom)); }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 46px;
+      padding: 13px 18px;
+      border: 1px solid rgba(40,35,30,.2);
+      border-radius: 999px;
+      text-decoration: none;
+      font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .12em;
+      color: rgba(40,35,30,.85);
+      background: rgba(250,247,242,.6);
+    }
+
+    .kicker { margin: 0 0 18px; font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .27em; color: rgba(78,126,150,.6); }
+    h1 { margin: 0 0 20px; font-family: "Cormorant Garamond", "Didot", "Times New Roman", serif; font-style: italic; font-weight: 300; font-size: clamp(52px, 15vw, 100px); line-height: 1; letter-spacing: .05em; }
+    .lead { margin: 0 0 58px; max-width: 34em; font-size: 12.5px; line-height: 2; letter-spacing: .06em; color: rgba(42,37,33,.66); }
+
+    .ateliers { display: grid; gap: 14px; }
+    @media (min-width: 640px) { .ateliers { grid-template-columns: 1fr 1fr; } }
+    .atelier {
+      display: block;
+      position: relative;
+      padding: 26px 22px 24px;
+      border: 1px solid rgba(40,35,30,.12);
+      border-radius: 3px;
+      text-decoration: none;
+      background: rgba(40,35,30,.02);
+      transition: background .35s ease, border-color .35s ease, transform .35s ease;
+    }
+    .atelier:active { transform: scale(.985); }
+    .atelier:hover { background: rgba(40,35,30,.045); border-color: rgba(40,35,30,.24); }
+    .atelier::before { content: ""; position: absolute; left: 22px; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 14px var(--tone); }
+    .atelier small { display: block; margin: 0 0 15px 18px; font: 500 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .2em; color: rgba(40,35,30,.45); }
+    .atelier h2 { margin: 0 0 10px; font: 400 clamp(26px, 7vw, 34px)/1.05 "Times New Roman", "Yu Mincho", serif; letter-spacing: .05em; }
+    .atelier p { margin: 0; font-size: 11.5px; line-height: 1.9; letter-spacing: .05em; color: rgba(42,37,33,.6); }
+
+    .tsuya   { --tone: #a86c84; }
+    .migaki  { --tone: #3e62a8; }
+    .niji    { --tone: #a8862f; }
+    .aura    { --tone: #4e7e96; }
+
+    .lab {
+      margin-top: 58px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(40,35,30,.1);
+    }
+    .lab-label { font: 500 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .24em; color: rgba(40,35,30,.4); }
+    .lab a { display: inline-block; margin-top: 14px; font: 400 21px/1.3 "Times New Roman", "Yu Mincho", serif; letter-spacing: .05em; color: rgba(42,37,33,.85); }
+    .lab p { margin: 10px 0 0; max-width: 34em; font-size: 11.5px; line-height: 1.9; letter-spacing: .05em; color: rgba(42,37,33,.55); }
+
+    .footer { margin-top: 80px; padding-top: 26px; border-top: 1px solid rgba(40,35,30,.1); display: flex; justify-content: space-between; font: 500 8px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; opacity: .45; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← TRACE / SKIN</a>
+
+    <p class="kicker">NAIL TRY-ON ATELIERS</p>
+    <h1>Fitting</h1>
+    <p class="lead">カメラを許可して、手をかざす。</p>
+
+    <nav class="ateliers" aria-label="試着アトリエ一覧">
+      <a class="atelier tsuya" href="https://ebiko5555.github.io/tsuya-atelier/">
+        <small>FOR WOMEN — 完成版</small>
+        <h2>艶</h2>
+        <p>ベージュとローズの暖色。試着・配色抽出・光の軌跡・お絵かき・撮影まで、シリーズの基準になる一本。</p>
+      </a>
+      <a class="atelier migaki" href="https://ebiko5555.github.io/migaki-atelier/">
+        <small>GENDERLESS / MEN — 試行中</small>
+        <h2>磨</h2>
+        <p>黒とコバルトブルー。2026年のメンズネイルトレンド(マット・クロム・ジオメトリック)を反映。</p>
+      </a>
+      <a class="atelier niji" href="https://ebiko5555.github.io/niji-atelier/">
+        <small>FOR KIDS</small>
+        <h2>にじ</h2>
+        <p>絵本調・ひらがなのUI。お絵かきと写真の取り込みを前に出した、子どものための入口。</p>
+      </a>
+      <a class="atelier aura" href="https://ebiko5555.github.io/aura-atelier/">
+        <small>ENGLISH / ALL</small>
+        <h2>AURA</h2>
+        <p>英語版。機能は艶と同じ。ネイルケアのイラストを使った「The Ritual of Care」ページ付き。</p>
+      </a>
+    </nav>
+
+    <div class="lab">
+      <span class="lab-label">MATERIAL LAB</span><br>
+      <a href="../nail/index.html">Nail Material Test →</a>
+      <p>アトリエの前段階の実験。カメラの手に素材を直接重ねて、追跡と見え方を検証した場所。</p>
+    </div>
+
+    <footer class="footer"><span>EMIKO IMAFUKU</span><span>HAND / NAIL / TRACE</span></footer>
+  </div>
+</body>
+</html>
