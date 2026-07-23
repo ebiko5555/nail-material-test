@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f4f2ec">
+  <meta name="description" content="あなたの手に、そっと触れるための場所。">
+  <title>手</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --paper: #f4f2ec;
+      --ink:   #26251f;
+      --ink-56: rgba(38, 37, 31, .56);
+      --ink-34: rgba(38, 37, 31, .34);
+      --ink-20: rgba(38, 37, 31, .20);
+      --latin: "Hanken Grotesk", sans-serif;
+      --jp: "YuGothic", "Yu Gothic Medium", "Yu Gothic", "游ゴシック体", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; }
+    html { background: var(--paper); }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--jp);
+      font-weight: 400;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+    a { color: inherit; }
+    :focus-visible { outline: 1px solid var(--ink); outline-offset: 4px; }
+    .label { font-family: var(--latin); font-weight: 500; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; }
+
+    /* ---- 場（カメラ） ---- */
+    .field { position: fixed; inset: 0; background: var(--paper); }
+    #video { display: none; }
+    #stage { display: block; width: 100%; height: 100%; object-fit: cover; touch-action: none; }
+
+    /* ごく淡いしるし（隅） */
+    .corner { position: absolute; z-index: 4; color: var(--ink-34); pointer-events: none; }
+    .corner.tl { top: max(18px, env(safe-area-inset-top)); left: max(20px, 3vw); }
+    .corner.tr { top: max(18px, env(safe-area-inset-top)); right: max(20px, 3vw); pointer-events: auto; }
+    .corner.bl { bottom: max(18px, env(safe-area-inset-bottom)); left: max(20px, 3vw); }
+
+    /* 手の見せ方の切替（開発中の比較用・ごく控えめ） */
+    .mode { display: inline-flex; gap: 0; }
+    .mode button { padding: 6px 10px; color: var(--ink-34); letter-spacing: .1em; font-size: 11px; font-family: var(--jp); border-bottom: 1px solid transparent; }
+    .mode button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+    /* 爪の色（唯一の色・小さく） */
+    .hues { position: absolute; z-index: 4; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 8px)); transform: translateX(-50%); display: flex; gap: 20px; align-items: center; }
+    .hue { width: 15px; height: 21px; padding: 0; border: 1px solid var(--ink-20); border-radius: 46% 46% 42% 42% / 30% 30% 14% 14%; opacity: .7; transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s ease; }
+    .hue[aria-pressed="true"] { opacity: 1; transform: translateY(-5px) scale(1.08); box-shadow: 0 0 0 1px var(--ink); }
+    .hue.bare { background: transparent; }
+    .hue.rose { background: #cf9aa6; }
+    .hue.mist { background: #a9b7c4; }
+    .hue.gold { background: #c3a75f; }
+    .hue.ink  { background: #3a4550; }
+
+    /* ---- しきい（入口） ---- */
+    .threshold { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; background: var(--paper); transition: opacity 1s ease, visibility 1s; }
+    .threshold.gone { opacity: 0; visibility: hidden; }
+    .thr-inner { width: min(80vw, 460px); text-align: center; }
+    .thr-nail { width: 34px; height: 48px; margin: 0 auto 40px; border-radius: 46% 46% 42% 42% / 30% 30% 14% 14%; background: linear-gradient(160deg, #e2b2ad, #c98f92); }
+    .thr-line { margin: 0; font-size: 15px; line-height: 2; letter-spacing: .16em; color: var(--ink); }
+    .thr-start { margin-top: 42px; font-family: var(--latin); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--ink-56); border-bottom: 1px solid var(--ink-20); padding-bottom: 5px; transition: color .3s ease, border-color .3s ease; }
+    .thr-start:hover { color: var(--ink); border-color: var(--ink); }
+    .thr-note { margin: 30px 0 0; font-size: 10px; letter-spacing: .08em; color: var(--ink-34); }
+    .thr-err { min-height: 18px; margin-top: 14px; font-size: 11px; letter-spacing: .04em; color: #a6706f; }
+
+    @media (prefers-reduced-motion: reduce) { * { transition-duration: .12s !important; } }
+  </style>
+</head>
+<body>
+  <main class="field">
+    <video id="video" playsinline muted></video>
+    <canvas id="stage" aria-label="カメラに映るあなたの手。触れると光が返り、爪に色が宿る。"></canvas>
+
+    <p class="corner tl label">Te / 手</p>
+    <div class="corner tr">
+      <span class="mode" role="group" aria-label="手の見せ方">
+        <button id="mode-paper" aria-pressed="true">紙</button>
+        <button id="mode-skin" aria-pressed="false">肌</button>
+      </span>
+    </div>
+    <p class="corner bl label" id="hand-state">—</p>
+
+    <div class="hues" role="group" aria-label="爪に宿す色">
+      <button class="hue bare" data-hue="bare" aria-pressed="true" aria-label="なし"></button>
+      <button class="hue rose" data-hue="rose" aria-pressed="false" aria-label="桜鼠"></button>
+      <button class="hue mist" data-hue="mist" aria-pressed="false" aria-label="藤鼠"></button>
+      <button class="hue gold" data-hue="gold" aria-pressed="false" aria-label="金"></button>
+      <button class="hue ink"  data-hue="ink"  aria-pressed="false" aria-label="群青"></button>
+    </div>
+  </main>
+
+  <section class="threshold" id="threshold">
+    <div class="thr-inner">
+      <div class="thr-nail" aria-hidden="true"></div>
+      <p class="thr-line">手を、かざす。</p>
+      <button class="thr-start" id="start" type="button">Begin</button>
+      <p class="thr-note">映像はこの端末の中だけで処理され、送信も保存もされません。</p>
+      <p class="thr-err" id="err" role="alert"></p>
+    </div>
+  </section>
+
+  <script>
+    const MP_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/';
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+    const threshold = document.getElementById('threshold');
+    const errBox = document.getElementById('err');
+    const handState = document.getElementById('hand-state');
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let stream = null, hands = null, landmarks = [], running = false, busy = false, loops = false;
+    let mode = 'paper';           // 'paper'（紙色モノクロ）| 'skin'（自然な肌色）
+    let hue = 'bare';             // 爪に宿す色
+    let lastDetect = 0, lastSeen = 0;
+    let trails = [], particles = [];
+    const nailStates = Array.from({ length: 5 }, () => null);
+    const tips = [4, 8, 12, 16, 20], bases = [3, 7, 11, 15, 19];
+
+    const HUES = {
+      bare: null,
+      rose: { a: '#e6bcc3', b: '#b87f86', glow: 'rgba(205,150,166,.30)' },
+      mist: { a: '#c3ced9', b: '#8593a1', glow: 'rgba(160,180,200,.28)' },
+      gold: { a: '#e3cf92', b: '#a4863f', glow: 'rgba(200,175,110,.30)' },
+      ink:  { a: '#6b7784', b: '#28323d', glow: 'rgba(70,90,110,.30)' }
+    };
+
+    const mirrored = () => true; // 内カメラは鏡像
+    const point = lm => ({ x: (mirrored() ? 1 - lm.x : lm.x) * canvas.width, y: lm.y * canvas.height });
+
+    function fitCanvas() {
+      if (!video.videoWidth) return;
+      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      }
+    }
+
+    function updateLandmarks(next) {
+      const now = performance.now();
+      if (!next.length) {
+        if (now - lastSeen > 320) { landmarks = []; nailStates.fill(null); handState.textContent = '—'; }
+        return;
+      }
+      lastSeen = now;
+      const n = next[0];
+      if (!landmarks.length || landmarks[0].length !== n.length) {
+        landmarks = [n.map(p => ({ ...p }))];
+      } else {
+        const prev = landmarks[0];
+        landmarks = [n.map((p, i) => {
+          const o = prev[i];
+          const speed = Math.hypot(p.x - o.x, p.y - o.y, (p.z || 0) - (o.z || 0));
+          const a = Math.min(.58, .18 + speed * 6.5);
+          return { x: o.x + (p.x - o.x) * a, y: o.y + (p.y - o.y) * a, z: (o.z || 0) + ((p.z || 0) - (o.z || 0)) * a };
+        })];
+      }
+      handState.textContent = 'ここに、ある';
+    }
+
+    function smoothAngle(cur, tgt, a) {
+      let d = tgt - cur;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      return cur + d * a;
+    }
+
+    function nailPath(w, l) {
+      ctx.beginPath();
+      ctx.moveTo(-w * .48, l * .38);
+      ctx.bezierCurveTo(-w * .54, l * .12, -w * .5, -l * .27, 0, -l * .52);
+      ctx.bezierCurveTo(w * .5, -l * .27, w * .54, l * .12, w * .48, l * .38);
+      ctx.quadraticCurveTo(0, l * .55, -w * .48, l * .38);
+      ctx.closePath();
+    }
+
+    function paintNail(w, l) {
+      const h = HUES[hue];
+      if (!h) {   // bare：素の爪をほんのわずかに整えるだけ
+        ctx.fillStyle = 'rgba(244,242,236,.14)'; ctx.fill();
+        ctx.globalAlpha = .5; ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = Math.max(1, w * .03); ctx.stroke(); ctx.globalAlpha = 1;
+        return;
+      }
+      const g = ctx.createLinearGradient(-w, -l, w, l);
+      g.addColorStop(0, h.a); g.addColorStop(1, h.b);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.globalAlpha = .3; ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.ellipse(-w * .16, -l * .24, w * .16, l * .24, -.4, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      nailPath(w, l); ctx.globalAlpha = .6; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = Math.max(1, w * .025); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+
+    function drawNails() {
+      const h = HUES[hue];
+      for (const hand of landmarks) {
+        for (let i = 0; i < 5; i++) {
+          const tip = point(hand[tips[i]]), base = point(hand[bases[i]]);
+          const dx = tip.x - base.x, dy = tip.y - base.y, dist = Math.hypot(dx, dy);
+          if (dist < 4) continue;
+          const ux = dx / dist, uy = dy / dist;
+          const target = {
+            length: dist * (i === 0 ? 1.08 : 1.24),
+            width: dist * (i === 0 ? .74 : .63),
+            cx: tip.x + ux * dist * (i === 0 ? 1.08 : 1.24) * .16,
+            cy: tip.y + uy * dist * (i === 0 ? 1.08 : 1.24) * .16,
+            angle: Math.atan2(dy, dx) + Math.PI / 2
+          };
+          if (!nailStates[i]) nailStates[i] = target;
+          const s = nailStates[i];
+          s.cx += (target.cx - s.cx) * .3; s.cy += (target.cy - s.cy) * .3;
+          s.width += (target.width - s.width) * .22; s.length += (target.length - s.length) * .22;
+          s.angle = smoothAngle(s.angle, target.angle, .28);
+          ctx.save(); ctx.translate(s.cx, s.cy); ctx.rotate(s.angle);
+          if (h) { ctx.shadowColor = h.glow; ctx.shadowBlur = s.width * .5; }
+          nailPath(s.width, s.length); paintNail(s.width, s.length);
+          ctx.restore();
+        }
+      }
+    }
+
+    // 触れると返る、光の痕跡
+    function addTrace(x, y, dense = false) {
+      trails.push({ x, y, life: 1, r: dense ? 26 : 12 });
+      const count = reduced ? 1 : dense ? 12 : 4;
+      const max = 90;
+      for (let i = 0; i < count && particles.length < max; i++) {
+        const a = Math.random() * Math.PI * 2, sp = .1 + Math.random() * (dense ? .9 : .45);
+        particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - .06, life: 1, size: .5 + Math.random() * 1.6 });
+      }
+    }
+    function drawTraces() {
+      ctx.globalCompositeOperation = 'lighter';
+      trails = trails.filter(t => t.life > .02);
+      for (const t of trails) {
+        const rr = t.r * (1.7 - t.life);
+        const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, rr);
+        g.addColorStop(0, `rgba(246,240,232,${t.life * .16})`);
+        g.addColorStop(1, 'rgba(246,240,232,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(t.x, t.y, rr, 0, Math.PI * 2); ctx.fill();
+        t.life *= .95;
+      }
+      particles = particles.filter(p => p.life > .03);
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy; p.vx *= .99; p.vy *= .99; p.life *= .97;
+        ctx.fillStyle = `rgba(240,235,226,${p.life * .5})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    function draw() {
+      if (!running) return;
+      fitCanvas();
+      // 手（映像）を描く
+      ctx.save();
+      if (mirrored()) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+      if (mode === 'paper') ctx.filter = 'grayscale(1) contrast(1.05) brightness(1.12)';
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.filter = 'none';
+      ctx.restore();
+      // 紙色へ寄せる（白を生成りに）＋淡いビネットで手に集める
+      if (mode === 'paper') {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = '#f4f2ec'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      const shade = ctx.createRadialGradient(canvas.width * .5, canvas.height * .46, 0, canvas.width * .5, canvas.height * .46, canvas.width * .72);
+      shade.addColorStop(.5, 'rgba(244,242,236,0)');
+      shade.addColorStop(1, mode === 'paper' ? 'rgba(244,242,236,.66)' : 'rgba(20,18,14,.34)');
+      ctx.fillStyle = shade; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawNails();
+      drawTraces();
+      requestAnimationFrame(draw);
+    }
+
+    async function detect(t = 0) {
+      if (!running) return;
+      if (!busy && video.readyState >= 2 && t - lastDetect > 70) {
+        busy = true; lastDetect = t;
+        try { await hands.send({ image: video }); } catch (e) {} finally { busy = false; }
+      }
+      requestAnimationFrame(detect);
+    }
+
+    async function start() {
+      errBox.textContent = '';
+      if (!navigator.mediaDevices?.getUserMedia) { errBox.textContent = '「このサイトを開く.command」から開いてください。'; return; }
+      try {
+        if (!window.Hands) throw new Error('tracking');
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+        video.srcObject = stream; await video.play(); fitCanvas();
+        if (!hands) {
+          hands = new Hands({ locateFile: f => MP_CDN + f });
+          hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: .7, minTrackingConfidence: .72 });
+          hands.onResults(r => updateLandmarks(r.multiHandLandmarks || []));
+          await hands.initialize();
+        }
+        running = true; threshold.classList.add('gone');
+        if (!loops) { loops = true; requestAnimationFrame(draw); requestAnimationFrame(detect); }
+      } catch (e) {
+        errBox.textContent = location.protocol === 'file:'
+          ? '「このサイトを開く.command」から開いてください。'
+          : 'カメラを始められませんでした。カメラの許可を確認してください。';
+      }
+    }
+
+    // 触れる
+    function pos(e) { const r = canvas.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return { x: (p.clientX - r.left) / r.width * canvas.width, y: (p.clientY - r.top) / r.height * canvas.height }; }
+    let down = false, pressTimer = null;
+    canvas.addEventListener('pointerdown', e => { down = true; const { x, y } = pos(e); addTrace(x, y, true); pressTimer = setTimeout(() => addTrace(x, y, true), 520); });
+    canvas.addEventListener('pointermove', e => { if (down) { const { x, y } = pos(e); addTrace(x, y); } });
+    const up = () => { down = false; clearTimeout(pressTimer); };
+    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+
+    document.getElementById('start').addEventListener('click', start);
+    document.getElementById('mode-paper').addEventListener('click', () => setMode('paper'));
+    document.getElementById('mode-skin').addEventListener('click', () => setMode('skin'));
+    function setMode(m) {
+      mode = m;
+      document.getElementById('mode-paper').setAttribute('aria-pressed', String(m === 'paper'));
+      document.getElementById('mode-skin').setAttribute('aria-pressed', String(m === 'skin'));
+    }
+    document.querySelectorAll('.hue').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.hue').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      hue = b.dataset.hue;
+    }));
+    addEventListener('keydown', e => { if (e.key === 'Escape' && running) { /* そのまま */ } });
+  </script>
+</body>
+</html>
